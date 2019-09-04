@@ -6,17 +6,18 @@
 
 unsigned char deviceSlaveAdd = 0;		
 unsigned int wait_us = 10/3; 		// default value for 10 ms period.
+
 unsigned int sdaPIN = 1;		// Pin for sda, default: 1
 unsigned int sclPIN = 2;		// Pin for scl, default: 2
+
 
 // #######################################   SOFTWARE   FUNCTIONS   ###########################################################
 
 void i2cConfig(unsigned int mode, unsigned int sda_Pin, unsigned int scl_Pin, unsigned int param) {
-	
+
+	i2cPinesDefine(sda_Pin, scl_Pin);
 	sdaPIN = sda_Pin;
 	sclPIN = scl_Pin;
-
-	i2cPinesDefine(sdaPIN, sclPIN);
 
 	if (mode == SLAVE_MODE) {
 		//setup slave
@@ -31,33 +32,147 @@ void i2cConfig(unsigned int mode, unsigned int sda_Pin, unsigned int scl_Pin, un
 }
 
 //For slave
-unsigned int i2cSlaveListening(unsigned int timeout, unsigned char* dataStored) {
+unsigned int i2cSlaveListeningCopying(unsigned int timeout, unsigned char* dataStored, unsigned int* sdaPines) {	//try to use a small timeout (how much?....)
 
-	unsigned char slaveAddReaded = 0, dataDir = 0, dataReaded = 0;
-	bool row = 1; //default read
+
+	/******* ALGORITHM: ********
+	*  1. Check the sda channel waiting a transaction
+	*  2. Once the transaction was found, read the address, while is copy the data to his
+	*      othres sda ports.
+	*  3. Check if the address owns to this slave, if not, check the others sda ports.   
+	*  4. Respond to the master, according point 3.
+	*  5. Continue the comm copying the data to the sda port as a wire.   
+	********************************/		
+		
 	
-	if(i2cSlaveWaitStartCondition(timeout)) {
+	unsigned char slaveAddReaded = 0, dataAdd = 0, dataReaded = 0;
+	bool row = 1; //default read
+	unsigned int slaveConnected;
+	
+	if( i2cSlaveWaitStartConditionCopying( timeout, &sdaPines[0] ) ) {
 		//Read byte for slave add + operation
-		slaveAddReaded = i2cSlaveReadByte();
-		row = (slaveAddReaded & 0x01);
+		slaveAddReaded = i2cSlaveReadByteCopying( timeout, &sdaPines[0] );
+		row = ( slaveAddReaded & 0x01 );
 		slaveAddReaded >>= 1;
 
-		//Responds ACK or NACK.
-		waitFallFlank(sclPIN);
+		//Responds ACK or NACK to the slave add
 		if(slaveAddReaded == deviceSlaveAdd) {
-			i2cSlaveNack();
+			//send others sdas to low
+			i2cSlaveSdasLow( &sdaPines[0] );
+			
+			//respond Nack for correct slave add
+			i2cSlaveNack( timeout );
+			
+			//Read byte for data dir:
+			dataAdd = i2cSlaveReadByte( timeout ); 
+
+			//Responds ACK or NACK to the data add
+			if(dataAdd < 100) {
+				i2cSlaveNack( timeout );
+				if( row ) {    //Master wants to read
+					i2cSlaveWriteByte( dataStored[dataAdd], timeout );
+					if( i2cSlaveReadBit( timeout ) ) { 
+						if( !i2cSlaveWaitStopCondition( timeout ) ) return I2C_SLAVE_STOP_ERROR;
+						//If you want to do something with the ACK master's respond
+						return I2C_SLAVE_DATA_WRITE_ERROR;
+					} else {
+						if( !i2cSlaveWaitStopCondition( timeout ) ) return I2C_SLAVE_STOP_ERROR;
+						//If you want to do something with the NACK master's respond
+						return I2C_OK; 
+					}
+				} else {    //Master wants to write
+					dataReaded = i2cSlaveReadByte( timeout );
+					dataStored[dataAdd] = dataReaded;
+
+					//Responds ACK or NACK. 
+					if( dataReaded == dataStored[dataAdd] ) {
+						i2cSlaveNack( timeout );
+						if( !i2cSlaveWaitStopCondition( timeout ) ) return I2C_SLAVE_STOP_ERROR;
+						return I2C_OK;
+					} else { //Ack for error saving data 
+						i2cSlaveAck( timeout );
+						if( !i2cSlaveWaitStopCondition( timeout ) ) return I2C_SLAVE_STOP_ERROR;
+						return I2C_SLAVE_DATA_READ_ERROR;
+					}
+				}
+			} else { // Ack for wrong data add error 
+				i2cSlaveAck( timeout );
+				if( !i2cSlaveWaitStopCondition( timeout ) ) return I2C_SLAVE_STOP_ERROR;
+				return I2C_SLAVE_DATAADD_READ_ERROR;
+			}
+		} else { //Ack for wrong Add
+			//check the others sdas first 
+			//wait response from a slave and send Ack/Nack! 
+			slaveConnected = i2cSlaveNackFromSlave( timeout, &sdaPines[0] );
+			if( slaveConnected != SLAVE_DIDNT_NACK ) {	//A slave responded and a Nack was sent to master for correct slave add
+				//Read and save a byte for dataAdd:
+				dataAdd = i2cSlaveReadByteCopying( timeout, &sdaPines[0] ); /////TODO: Agregar param de dir a copiar (Para  no copiar a todos)
+				slaveConnected = i2cSlaveNackFromSlave( timeout, &sdaPines[0] );////TODO: Agregar param de dir a copiar (Para  no copiar a todos)
+				if( slaveConnected != SLAVE_DIDNT_NACK ) {	//A slave responded and a Nack was sent to master for correct data add
+					if( row ) {    //Master wants to read
+						i2cSlaveWriteByteCopying( sdaPines[slaveConnected], timeout ); //Copy the slave response.
+						
+						if( i2cSlaveReadBitCopying( timeout, sdaPines[slaveConnected] ) ) { 
+							if( !i2cSlaveWaitStopConditionCopying( timeout, &sdaPines[0] ) ) return I2C_SLAVE_STOP_ERROR;
+							//If you want to do something with the ACK master's response
+							return I2C_SLAVE_DATA_WRITE_ERROR;
+						} else {
+							if( !i2cSlaveWaitStopConditionCopying( timeout, &sdaPines[0] ) ) return I2C_SLAVE_STOP_ERROR;
+							//If you want to do something with the NACK master's response
+							return I2C_OK; 
+						}
+					} else {    //Master wants to write
+						dataReaded = i2cSlaveReadByteCopying( timeout, &sdaPines[0] ); 
+						// start NACK/ACK respond for a correct data saved to the master  
+						if( i2cSlaveNackFromSlave( timeout, &sdaPines[0] ) != SLAVE_DIDNT_NACK ) { //A slave responded, a Nack was sent to master for correct data
+							if( !i2cSlaveWaitStopCondition( timeout ) ) return I2C_SLAVE_STOP_ERROR;
+							return I2C_OK;
+						} else {	//Any slave responded and an Ack was sent to master for incorrect data add
+							if( !i2cSlaveWaitStopCondition( timeout ) ) return I2C_SLAVE_STOP_ERROR;
+							return I2C_SLAVE_DATA_READ_ERROR;	 
+						}
+					}
+				} else {	//Any slave responded and an Ack was sent to master for incorrect data add
+					if( !i2cSlaveWaitStopCondition( timeout ) ) return I2C_SLAVE_STOP_ERROR;
+					return I2C_SLAVE_DATAADD_READ_ERROR;	 
+				}
+			} else {	//Any slave responded and an Ack was sent to master for incorrect slave add
+				if( !i2cSlaveWaitStopCondition( timeout ) ) return I2C_SLAVE_STOP_ERROR;
+				return I2C_SLAVE_SLAVEADD_READ_ERROR;
+			} 
+			// At this point is already responded ACK for slave add to the master
+		}
+	} else {  //Error for No communication found
+		return I2C_SLAVE_NO_COMM_ERROR;
+	}
+	
+}
+
+unsigned int i2cSlaveListening(unsigned int timeout, unsigned char* dataStored) {
+
+	unsigned char slaveAddReaded = 0, dataAdd = 0, dataReaded = 0;
+	bool row = 1; //default read
+	
+	if( i2cSlaveWaitStartCondition(timeout) ) {
+		//Read byte for slave add + operation
+		slaveAddReaded = i2cSlaveReadByte( timeout );
+		row = ( slaveAddReaded & 0x01 );
+		slaveAddReaded >>= 1;
+
+		//Responds ACK or NACK. 
+		if( slaveAddReaded == deviceSlaveAdd ) {
+			i2cSlaveNack( timeout );
      
 			//Read byte for data dir:
-			dataDir = i2cSlaveReadByte(); 
+			dataAdd = i2cSlaveReadByte( timeout ); 
 
 			//Responds ACK or NACK.
-			waitFallFlank(sclPIN);
-				if(dataDir < 100) {
-				i2cSlaveNack();
+			if(dataAdd < 100) {
+				i2cSlaveNack( timeout );
 				if(row) {    //Master wants to read
-					i2cSlaveWriteByte(dataStored[dataDir]);
-					if(i2cSlaveReadBit()) { 
-						i2cSlaveWaitStopCondition(timeout);
+					i2cSlaveWriteByte( dataStored[dataAdd], timeout );
+					if( i2cSlaveReadBit( timeout ) ) { 
+						i2cSlaveWaitStopCondition( timeout );
 						return I2C_SLAVE_DATA_WRITE_ERROR;
 						/*If you want to do something with the ACK master's respond*/
 					} else {
@@ -66,32 +181,31 @@ unsigned int i2cSlaveListening(unsigned int timeout, unsigned char* dataStored) 
 						/*If you want to do something with the NACK master's respond*/ 
 					}
 				} else {    //Master wants to write
-					dataReaded = i2cSlaveReadByte();
-					dataStored[dataDir] = dataReaded;
+					dataReaded = i2cSlaveReadByte(timeout);
+					dataStored[dataAdd] = dataReaded;
 
 					//Responds ACK or NACK.
-					waitFallFlank(sclPIN);
-					if(dataReaded == dataStored[dataDir]) {
-						i2cSlaveNack();
+					if( dataReaded == dataStored[dataAdd] ) {
+						i2cSlaveNack(timeout);
 						while( !i2cSlaveWaitStopCondition(timeout) );
 						return I2C_OK;
 					} else { 
-						i2cSlaveAck();
+						i2cSlaveAck(timeout);
 						while( !i2cSlaveWaitStopCondition(timeout) );
 						return I2C_SLAVE_DATA_READ_ERROR;
 					}
 				}
-			} else {
-				i2cSlaveAck();
+			} else { // Ack for wrong data add error 
+				i2cSlaveAck(timeout);
 				while( !i2cSlaveWaitStopCondition(timeout) );
 				return I2C_SLAVE_DATAADD_READ_ERROR;
 			}
-		} else {
-			i2cSlaveAck();
+		} else { // Ack for wrong Add
+			i2cSlaveAck(timeout);
 			while( !i2cSlaveWaitStopCondition(timeout) );
 			return I2C_SLAVE_SLAVEADD_READ_ERROR;
 		}
-	} else {
+	} else { //Error for No communication found
 		return I2C_SLAVE_NO_COMM_ERROR;
 	}
 	
