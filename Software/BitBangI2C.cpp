@@ -18,7 +18,7 @@ void i2cSlaveHighSda(void) {
 	pinMode(sdaPin,INPUT); 		// bring SDA to high impedance 
 }
 
-void i2cSlaveLowSda(void) {		//aqui puede haber un error!
+void i2cSlaveLowSda(void) {		// bring SDA to LOW
 	digitalWrite(sdaPin,LOW); 
 	pinMode(sdaPin,OUTPUT);	
 }
