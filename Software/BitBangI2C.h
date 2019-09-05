@@ -6,7 +6,8 @@
 #define RISE_OR_FALL_FLANK_OK		0
 #define FALL_FLANK_TIMEOUT_ERROR	20
 #define RISE_FLANK_TIMEOUT_ERROR	21
-#define SLAVE_DIDNT_NACK		22
+#define SLAVE_NACK			22
+#define SLAVE_DIDNT_NACK		23
 
 void i2cPinesDefine(unsigned int sda_Pin, unsigned int scl_Pin);
 

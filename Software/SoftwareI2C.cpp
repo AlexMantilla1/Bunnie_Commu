@@ -47,14 +47,14 @@ unsigned int i2cSlaveListeningCopying(unsigned int timeout, unsigned char* dataS
 	
 	unsigned char slaveAddReaded = 0, dataAdd = 0, dataReaded = 0;
 	bool row = 1; //default read
-	unsigned int slaveConnected;
+	unsigned int slaveConnected; //sdaPines' position where a slave was found
 	
 	if( i2cSlaveWaitStartConditionCopying( timeout, &sdaPines[0] ) ) {
 		//Read byte for slave add + operation
-		slaveAddReaded = i2cSlaveReadByteCopying( timeout, &sdaPines[0] );
+		slaveAddReaded = i2cSlaveReadByteCopyingAll( timeout, &sdaPines[0] );
 		row = ( slaveAddReaded & 0x01 );
 		slaveAddReaded >>= 1;
-
+		
 		//Responds ACK or NACK to the slave add
 		if(slaveAddReaded == deviceSlaveAdd) {
 			//send others sdas to low
@@ -106,9 +106,8 @@ unsigned int i2cSlaveListeningCopying(unsigned int timeout, unsigned char* dataS
 			slaveConnected = i2cSlaveNackFromSlave( timeout, &sdaPines[0] );
 			if( slaveConnected != SLAVE_DIDNT_NACK ) {	//A slave responded and a Nack was sent to master for correct slave add
 				//Read and save a byte for dataAdd:
-				dataAdd = i2cSlaveReadByteCopying( timeout, &sdaPines[0] ); /////TODO: Agregar param de dir a copiar (Para  no copiar a todos)
-				slaveConnected = i2cSlaveNackFromSlave( timeout, &sdaPines[0] );////TODO: Agregar param de dir a copiar (Para  no copiar a todos)
-				if( slaveConnected != SLAVE_DIDNT_NACK ) {	//A slave responded and a Nack was sent to master for correct data add
+				dataAdd = i2cSlaveReadByteCopyingOne( timeout, sdaPines[slaveConnected] );
+				if( i2cSlaveNackFromOneSlave( timeout, sdaPines[slaveConnected] ) != SLAVE_DIDNT_NACK ) {	//A slave responded and a Nack was sent to master for correct data add
 					if( row ) {    //Master wants to read
 						i2cSlaveWriteByteCopying( sdaPines[slaveConnected], timeout ); //Copy the slave response.
 						
@@ -122,9 +121,9 @@ unsigned int i2cSlaveListeningCopying(unsigned int timeout, unsigned char* dataS
 							return I2C_OK; 
 						}
 					} else {    //Master wants to write
-						dataReaded = i2cSlaveReadByteCopying( timeout, &sdaPines[0] ); 
+						dataReaded = i2cSlaveReadByteCopyingOne( timeout, sdaPines[slaveConnected] ); 
 						// start NACK/ACK respond for a correct data saved to the master  
-						if( i2cSlaveNackFromSlave( timeout, &sdaPines[0] ) != SLAVE_DIDNT_NACK ) { //A slave responded, a Nack was sent to master for correct data
+						if( i2cSlaveNackFromOneSlave( timeout, sdaPines[slaveConnected] ) != SLAVE_DIDNT_NACK ) { //A slave responded, a Nack was sent to master for correct data
 							if( !i2cSlaveWaitStopCondition( timeout ) ) return I2C_SLAVE_STOP_ERROR;
 							return I2C_OK;
 						} else {	//Any slave responded and an Ack was sent to master for incorrect data add

@@ -61,14 +61,14 @@ unsigned int waitRiseFlank(unsigned char PIN, unsigned int timeout) {
 }
 
 //Waits a rise flank in the port PIN, while is copying the sdaPin (connected to master) signal to sda port (connected to slave), all this while a given timeout 
-unsigned int waitRiseFlankCopying(unsigned char PIN, unsigned int timeout, unsigned int sda) {
-	while( digitalRead(PIN) ) {
-		copySda( digitalRead(sdaPin), sda );
+unsigned int waitRiseFlankCopyingOne(unsigned char sclPIN, unsigned int timeout, unsigned int sdaToRead, unsigned int sdaToWrite) {
+	while( digitalRead(sclPIN) ) {
+		copySda( digitalRead(sdaToRead), sdaToWrite );
 		timeout--;
 		if( timeout == 0 ) return RISE_FLANK_TIMEOUT_ERROR; 
 	}
-	while( !digitalRead(PIN) ) {
-		copySda( digitalRead(sdaPin), sda );
+	while( !digitalRead(sclPIN) ) {
+		copySda( digitalRead(sdaToRead), sdaToWrite );
 		timeout--;
 		if( timeout == 0 ) return RISE_FLANK_TIMEOUT_ERROR;
 	}
@@ -104,14 +104,14 @@ unsigned int waitFallFlank(unsigned char PIN, unsigned int timeout) {
 }
 
 //Waits a fall flank in the port PIN, while is copying the sdaPin (connected to master) signal to sda port (connected to slave), all this while a given timeout 
-unsigned int waitFallFlankCopying(unsigned char PIN, unsigned int timeout, unsigned int sda) {
-	while(!digitalRead(PIN)) {
-		copySda( digitalRead(sdaPin), sda );
+unsigned int waitFallFlankCopyingOne(unsigned char sclPIN, unsigned int timeout, unsigned int sdaToRead, unsigned int sdaToWrite) {
+	while( !digitalRead(sclPIN) ) {
+		copySda( digitalRead(sdaToRead), sdaToWrite );
 		timeout--;
 		if( timeout == 0 ) return FALL_FLANK_TIMEOUT_ERROR; 
 	}
-	while(digitalRead(PIN)) {
-		copySda( digitalRead(sdaPin), sda );
+	while( digitalRead(sclPIN) ) {
+		copySda( digitalRead(sdaToRead), sdaToWrite );
 		timeout--;
 		if( timeout == 0 ) return FALL_FLANK_TIMEOUT_ERROR; 
 	}
@@ -119,12 +119,12 @@ unsigned int waitFallFlankCopying(unsigned char PIN, unsigned int timeout, unsig
 }
 
 unsigned int waitFallFlankCopyingAll(unsigned char PIN, unsigned int timeout, unsigned int* sdaPines) {
-	while(!digitalRead(PIN)) {
+	while( !digitalRead(PIN) ) {
 		for( int i = 0; i < 4 ; i++) if( sdaPines[i] != sdaPin ) copySda( digitalRead(sdaPin), sdaPines[i] );
 		timeout--;
 		if( timeout == 0 ) return FALL_FLANK_TIMEOUT_ERROR; 
 	}
-	while(digitalRead(PIN)) {
+	while( digitalRead(PIN) ) {
 		for( int i = 0; i < 4 ; i++) if( sdaPines[i] != sdaPin ) copySda( digitalRead(sdaPin), sdaPines[i] );
 		timeout--;
 		if( timeout == 0 ) return FALL_FLANK_TIMEOUT_ERROR; 
@@ -148,7 +148,23 @@ unsigned char i2cSlaveReadByte(unsigned int timeout) {
 	return inByte;
 }
 
-unsigned char i2cSlaveReadByteCopying(unsigned int timeout, unsigned int* sdaPines) {
+//This Function reads sdaPin (connected to master) and copies it to sdaSlave (connected to Slave)
+unsigned char i2cSlaveReadByteCopyingOne(unsigned int timeout, unsigned int sdaSlave) {
+	unsigned char inByte = 0;
+	for (int i = 0; i < 8; ++i) {
+		waitRiseFlankCopyingOne( sclPin, timeout, sdaPin, sdaSlave );
+		if ( digitalRead( sdaPin ) ) {
+			inByte = (inByte << 1) | 0x01; // msbit first
+		} else {
+			inByte = (inByte << 1);
+		}
+	}
+	waitFallFlankCopyingOne( sclPin, timeout, sdaPin, sdaSlave ); //function ends with the scl fall flank
+	return inByte;
+}
+
+//This Function reads sdaPin (connected to master) and copies it to all sda ports 
+unsigned char i2cSlaveReadByteCopyingAll(unsigned int timeout, unsigned int* sdaPines) {
 	unsigned char inByte = 0;
 	for (int i = 0; i < 8; ++i) {
 		waitRiseFlankCopyingAll( sclPin, timeout, sdaPines );
@@ -187,31 +203,44 @@ void i2cSlaveWriteByteCopying(unsigned int slaveSda, unsigned int timeout) {
 
 // ******************* ACK AND NACK SLAVE FUNCTIONS  *********************************
 
+// This slave send a NACK to the Master.
 void i2cSlaveNack(unsigned int timeout) {	//Signal For a correct recieved message 
 	i2cSlaveLowSda();
 	waitFallFlank( sclPin, timeout );
 	i2cSlaveHighSda();
 }
 
-
+// This Slave reads all his sda ports looking for a NACK from other slave. If a NACK is recieved, send a NACK to the master
+// and returns the sdaPines' position where the NACK was found
 unsigned int i2cSlaveNackFromSlave(unsigned int timeout, unsigned int* sdaPines) {	//Signal For a correct recieved message
 
-	while( !digitalRead(sclPin) )
+	//This function starts after a scl fall flank!
+	while( !digitalRead(sclPin) ) // While scl is LOW, looking for some answer.
 		for( int i = 0 ; i < 4 ; i++ ) 
 			if( sdaPines[i] != sdaPin ) {
 				pinMode(sdaPines[i],INPUT);
 				if( !digitalRead( sdaPines[i] ) ) {	//Other slave responded!
 					i2cSlaveNack( timeout );
-					pinMode(sdaPines[i],OUTPUT);
 					return i;
-				} else {
-					pinMode(sdaPines[i],OUTPUT);
 				}
 			}
 	return SLAVE_DIDNT_NACK;
 }
 
+unsigned int i2cSlaveNackFromOneSlave(unsigned int timeout, unsigned int sdaSlave) {	//Signal For a correct recieved message
+	
+	//This function starts after a scl fall flank!
+	while( !digitalRead(sclPin) ) { // While scl is LOW, looking for some answer.
+		pinMode(sdaSlave,INPUT);
+		if( !digitalRead( sdaSlave ) ) {	//Other slave responded!
+			i2cSlaveNack( timeout );
+			return sdaSlave;
+		}
+	}
+	return SLAVE_DIDNT_NACK;
+}
 
+// This slave send an ACK to the Master.
 void i2cSlaveAck(unsigned int timeout) {	//Signal For an incorrect message recieved 
 	i2cSlaveHighSda();
 	waitFallFlank( sclPin, timeout );
@@ -330,12 +359,12 @@ bool i2cSlaveReadBit(unsigned int timeout) {
 	waitFallFlank( sclPin, timeout );
 	return bit;
 }
-//Read 1 bit from sdaPin (connected to Master) and copies this bit to the sda port (connected to Slave)
-bool i2cSlaveReadBitCopying(unsigned int timeout, unsigned int sda) {
+//Read 1 bit from sdaPin (connected to Master) and copies this bit to the sdaSlave port (connected to Slave)
+bool i2cSlaveReadBitCopying(unsigned int timeout, unsigned int sdaSlave) {
 	i2cSlaveHighSda();
-	waitRiseFlankCopying( sclPin, timeout, sda );
+	waitRiseFlankCopyingOne( sclPin, timeout, sdaPin, sdaSlave );
 	bool bit = digitalRead(sdaPin);
-	waitFallFlankCopying( sclPin, timeout, sda );
+	waitFallFlankCopyingOne( sclPin, timeout, sdaPin, sdaSlave );
 	return bit;
 }
 
