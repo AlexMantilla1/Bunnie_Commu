@@ -1,5 +1,4 @@
-#include <wormLib.h>
-#include <SoftwareI2C.h>
+
 /*#include <asf.h>
 #include "ArduinoLike.c"
 #include "ArduinoLike.h"
@@ -29,10 +28,15 @@
 */
 
 
+#include <SoftwareI2C.h>
+#include <wormLib.h>
+
 uint32_t slaveAddres = 20;        //Address for this slave.
-unsigned int sda[] = {1,5,7,4};     //Ports used as sda channels.
-uint8_t scl = 14;                  //Port used as scl channel.
-unsigned long timeout = 0xFFFFFFFF;
+//unsigned int sdaPines[4] = {1,5,7,4};  //SAMD11
+//uint8_t scl = 14;                      //SAMD11
+unsigned int sdaPines[4] = {2,3,4,5};    //Arduino
+uint8_t scl = 7;                         //Arduino
+unsigned long timeout = 0xFFF;
 unsigned char dataStored[128];
 
 
@@ -45,17 +49,22 @@ void setup(){
   dataStored[SLAVE_MEMORY_WORM_SIZE] = 3;
   //dataStored[SLAVE_MEMORY_WORM_DIR] = WORM_0_TO_8;
   //Slave Config
-  i2cConfig(SLAVE_MODE, sda[0], scl, slaveAddres);
+  i2cConfig(SLAVE_MODE, sdaPines[0], scl, slaveAddres);
+  turnOffFlag(WAITING_FLAG);
   //Slave Set up
-  i2cSlaveSetUp(timeout, &dataStored[0], &sda[0]);
+  i2cSlaveSetUp(timeout, &dataStored[0], &sdaPines[0]);
 }
 // Slave2
 void loop() {
-  slaveListeningState(timeout, &dataStored[0], &sda[0]);
+  
+  Serial.print("1");
+  slaveListeningState(timeout, &dataStored[0], &sdaPines[0]);
   dataStored[SLAVE_MEMORY_WORM_DIR] = calDirSlave(&dataStored[0], dataStored[SLAVE_MEMORY_DELAY_B_WORMS]);
   //waitSleep(scl);
+  Serial.println("2");
   makeWorm( dataStored[SLAVE_MEMORY_WORM_SIZE],
             dataStored[SLAVE_MEMORY_WORM_DELAY],
             dataStored[SLAVE_MEMORY_WORM_DIR],
             dataStored[SLAVE_MEMORY_DELAY_B_WORMS] );
+  Serial.println("2");
 }

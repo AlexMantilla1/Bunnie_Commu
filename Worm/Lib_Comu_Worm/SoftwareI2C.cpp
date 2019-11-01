@@ -69,6 +69,8 @@ unsigned int i2cSlaveListeningCopying(unsigned long timeout, unsigned char* data
 				//Responds ACK or NACK to the slave add
 				
 				if(slaveAddReaded == deviceSlaveAdd) {
+					for (uint8_t i = 0; i < 4; i++) if (sdaPines[i] != sdaPIN) pinMode(sdaPines[i],INPUT);
+					
 					//for (char i = 0; i < 4; i++) pinMode(sdaPines[i],INPUT);
 					//send others sdas to low
 					//i2cSlaveSdasLow( sdaPines ); //This is not necessary
@@ -241,11 +243,26 @@ unsigned int i2cSlaveListening(unsigned long timeout, unsigned char* dataStored,
 	refSda = i2cGetSdaRef( sdaPIN, sdaPines);
 	// Hasta aqui
 	
-	if(i2cSlaveSyncUp() == COMM_FOUND) {
-		
-		unsigned int error = waitRiseFlank(sclPIN,timeout);
+	if(i2cSlaveSyncUp(timeout) == COMM_FOUND) {
+		/*
+		pinMode(sclPIN,OUTPUT);
+		digitalWrite(sclPIN,LOW);
+		//Serial.print("dataAdd es: "); //Serial.println(dataAdd,BIN);
+		Serial.print("sclPIN es: "); Serial.println(sclPIN,DEC);
+		Serial.print("sdaPIN es: "); Serial.println(sdaPIN,DEC);
+		delay(2000000);
+		*/
+		//unsigned int error = waitRiseFlank(sclPIN,timeout);
 		//pinMode(sdaPines[0],OUTPUT); digitalWrite(sdaPines[0],LOW);
-		if( i2cSlaveWaitStartCondition(timeout) && !error ) {
+		if( i2cSlaveWaitStartCondition(timeout) /*&& !error*/ ) {
+			/*
+			pinMode(sclPIN,OUTPUT);
+			digitalWrite(sclPIN,LOW);
+			//Serial.print("dataAdd es: "); //Serial.println(dataAdd,BIN);
+			Serial.print("sclPIN es: "); Serial.println(sclPIN,DEC);
+			Serial.print("sdaPIN es: "); Serial.println(sdaPIN,DEC);
+			delay(2000000);
+			*/
 			slaveAddReaded = i2cSlaveRead7Bits( timeout );
 			
 			if(checkParity(slaveAddReaded)) {
@@ -253,7 +270,7 @@ unsigned int i2cSlaveListening(unsigned long timeout, unsigned char* dataStored,
 				slaveAddReaded >>= 1;
 				slaveAddReaded = removeParity(slaveAddReaded,6);
 				//Responds ACK or NACK. 
-				//Serial.print("slaveAddReaded es: "); //Serial.println(slaveAddReaded,BIN);
+				Serial.print("slaveAddReaded es: "); Serial.println(slaveAddReaded,BIN);
 				////Serial.print("deviceSlaveAdd es: "); //Serial.println(deviceSlaveAdd,BIN);
 				if( slaveAddReaded == deviceSlaveAdd ) {
 					
@@ -479,7 +496,6 @@ void i2cSlaveSetUp(unsigned long timeout, unsigned char* dataStored, unsigned in
 		pinMode(sdaPines[i],INPUT);
 		//digitalWrite(sdaPines[i],HIGH);
 	}
-	
 	unsigned char i=0;
 	bool flag = true;
 	while(flag) {
@@ -497,7 +513,6 @@ void i2cSlaveSetUp(unsigned long timeout, unsigned char* dataStored, unsigned in
 		}
 		//printMemory(dataStored);
 	}
-	
 } 
 
 
@@ -548,7 +563,7 @@ unsigned int i2cMasterCheck( unsigned char* dataStored, unsigned int* sdaPines )
 		
 			//Serial.print("En el pin: "); //Serial.println(sdaPines[i],DEC);
 			setSDA(sdaPines[i]);
-			for (char j = 0; j < NUM_OF_TRIES; j++)	{ //Default 20 tries to communicate.
+			for (char j = 0; j < NUM_OF_TRIES; j++)	{ //Default 8 tries to communicate.
 				if (i2cMasterRead(slaveAddressToSearch, SLAVE_MEMORY_SDA_MASTER, &readValue) == I2C_OK)	{ //Slave found! //reading the sda connected to master
 					dataStored[(4*slaveToSearch) + readValue] = MASTER_CONNECTED; //copies in local memory too
 					sdaToFind[slaveToSearch-1] = i;
@@ -579,7 +594,7 @@ unsigned int i2cMasterCheck( unsigned char* dataStored, unsigned int* sdaPines )
 										slaveNumber = getSlaveNumber(slaveAddress,dataStored);
 									}
 								} else {
-									//Serial.println("Error leyendo SLAVE_MEMORY_SDA_SLAVE");
+									Serial.println("Error leyendo SLAVE_MEMORY_SDA_SLAVE");
 								}
 							}
 						} while (lfs);
@@ -591,7 +606,7 @@ unsigned int i2cMasterCheck( unsigned char* dataStored, unsigned int* sdaPines )
 								message = NEW_DEVICE_FOUND;													
 								break;
 							} else {
-								//Serial.println("Error Escribiendo SLAVE_MEMORY_SDA_SLAVE");
+								Serial.println("Error Escribiendo SLAVE_MEMORY_SDA_SLAVE");
 							}
 						}
 					}

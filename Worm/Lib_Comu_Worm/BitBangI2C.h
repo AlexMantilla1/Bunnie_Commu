@@ -40,7 +40,11 @@ void i2cSlaveSdasLow(unsigned int* sdaPines);
 
 
 // ******************* SLAVE NEEDS TO READ THE RISE AND FALL SCL/SDA FLANK *********************************
-
+#define WAITING_FLAG	12
+void turnOnFlag(uint8_t pin);
+void turnOffFlag(uint8_t pin);
+//Wait the rise flank no matter what. >:v.
+void waitUntilRiseFlank(uint8_t pin);
 //Waits a rise flank in the port PIN, while a given timeout
 unsigned int waitRiseFlank(unsigned char PIN, unsigned long timeout);
 
@@ -196,8 +200,8 @@ unsigned char removeParity(unsigned int parityData, unsigned int dataBits);
 void i2cMasterSyncUp(unsigned int wait_us);
 
 //Slave Sync Up
-unsigned int i2cSlaveSyncUp(void);
-unsigned int i2cSlaveSyncUpCopying(unsigned int timeout, unsigned int* sdaPines);
+unsigned int i2cSlaveSyncUp(unsigned long timeout);
+unsigned int i2cSlaveSyncUpCopying(unsigned long timeout, unsigned int* sdaPines);
 // #######################################   SYNCHRONIZATION   FUNCTIONS   ###########################################################
 
 unsigned char i2cGetSdaRef(unsigned int sda, unsigned int* sda_pines);

@@ -6,9 +6,9 @@
 #include <SoftwareI2C.h>
 
 //Some Values:
-#define DELAY_WORM_MS           500
-#define SINC_TIME_MASTER_US     3000
-#define SINC_TIME_SLAVE_US      6000
+#define DELAY_WORM_MS           0xFF
+#define SINC_TIME_MASTER_MS     30
+#define SINC_TIME_SLAVE_MS      60
 //Some instructions:
 #define ON              1
 #define OFF             0
@@ -16,10 +16,9 @@
 #define WORM_8_TO_0     1
 //Memory use:
 #define MASTER_MEMORY_DELAY_B_WORMS     19
-#define MASTER_MEMORY_DELAY_WORM        20
-#define MASTER_MEMORY_WORM_DELAY        21
-#define MASTER_MEMORY_WORM_SIZE         22
-#define MASTER_MEMORY_WORM_DIR          23
+#define MASTER_MEMORY_WORM_DELAY        20
+#define MASTER_MEMORY_WORM_SIZE         21
+#define MASTER_MEMORY_WORM_DIR          22
 
 #define SLAVE_MEMORY_DELAY_B_WORMS      7
 #define SLAVE_MEMORY_WORM_DELAY         8

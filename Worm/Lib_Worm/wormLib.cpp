@@ -4,37 +4,20 @@
 // ############################################# For both #############################################
 //Keep the Listening state until the end flag
 //Setting the led
+
+//#define SAMD11
+#define ARDUINO_LEDS
+
 void setLed(uint8_t ledNum, uint8_t value) {
-    uint8_t pinNumber = 0;
-    switch(ledNum) {
-        case 1:
-            pinNumber = 14;
-            break;
-        case 2:
-            pinNumber = 5;
-          break;
-        case 3:
-            pinNumber = 1;
-            break;
-        case 4:
-            pinNumber = 4;
-            break;
-        case 5:
-            pinNumber = 10;
-            break;
-        case 6:
-            pinNumber = 9;
-            break;
-        case 7:
-            pinNumber = 7;
-            break;
-        case 8:
-            pinNumber = 13;
-            break;
-        default:
-            pinNumber = 0;
-            break;
-    }
+
+    #ifdef SAMD11
+    uint8_t ledBoard[8] = {14,5,1,4,10,9,7,13};
+    #endif
+    #ifdef ARDUINO_LEDS
+    uint8_t ledBoard[8] = {7,2,3,4,8,6,5,9};
+    #endif
+
+    uint8_t pinNumber = ledBoard[ledNum-1];
     if(value) {
         digitalWrite(pinNumber,LOW);
         pinMode(pinNumber,OUTPUT);
@@ -100,11 +83,18 @@ void makeWormDown(uint32_t wormSize, uint32_t delayTime_ms) {
 }
 // Making the worm animation.
 void makeWorm(uint32_t wormSize, uint32_t delayTime_ms, bool param, uint8_t waits) {
+    //this sould be wormTime_ms = 255*(8+3) = 2805; cabe en los 16 bits del int.
+    Serial.print("waits es: "); Serial.println(waits,DEC);
     unsigned int wormTime_ms = delayTime_ms*(8+wormSize);
-    delay( (waits >> 4)*wormTime_ms );
+    Serial.print("wormTime_ms es: "); Serial.println(wormTime_ms,DEC);
+    uint16_t algo = (waits >> 4)*wormTime_ms;
+    Serial.print("1. algo es: "); Serial.println(algo,DEC);
+    delay( algo );
     if (param) makeWormDown(wormSize,delayTime_ms);
     else makeWormUp(wormSize,delayTime_ms);
-    delay( (waits & 0xF)*wormTime_ms );
+    algo = (waits & 0xF)*wormTime_ms;
+    Serial.print("2. algo es: "); Serial.println(algo,DEC);
+    delay( algo );
 }
 // ############################################# END For both #############################################
 // ############################################# For Master #############################################
@@ -120,7 +110,7 @@ uint8_t getSlaveAtSide(uint8_t ref) {
     else return 2;
 }
 //Convert the orders to a 32 bits register with the delays for all the slaves and the master.
-uint32_t convertOrderToDelays(uint8_t* order) {
+uint32_t convertOrderToDelays(uint8_t* order, uint8_t num) {
     uint32_t reg = 0;
     for (uint8_t i = 0; i < 4; i++) {
         if(order[i] == 0) reg <<= 8;
@@ -128,7 +118,7 @@ uint32_t convertOrderToDelays(uint8_t* order) {
             reg <<= 4;
             reg |= order[i] - 1;
             reg <<= 4;
-            reg |= 4 - order[i];
+            reg |= num + 1 - order[i];
         }
     }
     return reg;
@@ -147,6 +137,7 @@ uint32_t calDelays( unsigned char* dataStored ) {
         num += (dataStored[MASTER_MEMORY_S1_ADD+i] & 0x1);
         slavesConnec[i] = (dataStored[MASTER_MEMORY_S1_ADD+i] & 0x1);
     }
+    Serial.print("num es: "); Serial.println(num,DEC);
     //find the positions
     for (uint8_t i = 0; i < 3; i++) {
         uint8_t add = dataStored[MASTER_MEMORY_S1_ADD+i] >> 3;
@@ -268,31 +259,34 @@ uint32_t calDelays( unsigned char* dataStored ) {
             order[3] = 1;
             break;
     }
-    return convertOrderToDelays(&order[0]);
+    return convertOrderToDelays( &order[0],num );
 }
 //Send the data to the slaves con configure the worm secuency.
 void sendDataToSlaves(uint32_t delays, unsigned char* dataStored) {
+    Serial.print("delays es: "); Serial.println(delays,BIN);
     for (uint8_t i = 0; i < 4; i++) {
-        uint8_t data = delays >> (24 - i*8);
-        data |= 0xFF;
-        if(i < 3) while( i2cMasterWrite( (dataStored[MASTER_MEMORY_S1_ADD+i] >> 3 ), SLAVE_MEMORY_DELAY_B_WORMS, data ) != I2C_OK );
+        uint8_t data = (delays >> (24 - i*8)) & 0xFF;
+        Serial.print("data es: "); Serial.println(data,BIN);
+        if(i < 3) {if (data != 0x0) while( i2cMasterWrite( (dataStored[MASTER_MEMORY_S1_ADD+i] >> 3 ), SLAVE_MEMORY_DELAY_B_WORMS, data ) != I2C_OK );}
         else dataStored[MASTER_MEMORY_DELAY_B_WORMS] = data;
     }
+    Serial.print("dataStored[MASTER_MEMORY_DELAY_B_WORMS] es: "); Serial.println(dataStored[MASTER_MEMORY_DELAY_B_WORMS],BIN);
 }
 //Make the flag to end the communication.
 void endCommu() {
-    delayMicroseconds(SINC_TIME_MASTER_US);
+    delay(SINC_TIME_MASTER_MS);
     // put low scl and sdas!
     setLed(1,ON);
     setLed(2,ON);
     setLed(3,ON);
     setLed(7,ON);
-    delayMicroseconds(SINC_TIME_MASTER_US*2);
+    delay(SINC_TIME_MASTER_MS*2);
     // put high scl!
     setLed(1,OFF);
     setLed(2,OFF);
     setLed(3,OFF);
     setLed(7,OFF);
+    delay(SINC_TIME_MASTER_MS);
 }
 //Calculates the dir for the worm in master.
 bool calDirMaster(unsigned char* dataStored, uint32_t data) {
@@ -331,8 +325,15 @@ bool calDirMaster(unsigned char* dataStored, uint32_t data) {
 //Keep the Listening state until the end flag
 void slaveListeningState(unsigned long timeout, unsigned char* dataStored, unsigned int* sdaPines) {
     bool endFlag = false;
-    delayMicroseconds(SINC_TIME_SLAVE_US >> 1);
-    while (!endFlag) if (i2cSlaveListeningCopying(timeout, dataStored, sdaPines) == END_COMM) endFlag = true;
+    delay(SINC_TIME_SLAVE_MS >> 1);
+    Serial.println("1.1");
+    while (!endFlag) {
+        unsigned int algo = i2cSlaveListeningCopying(timeout, dataStored, sdaPines); 
+        Serial.print("algo es: "); Serial.println(algo,DEC);
+        if ( algo == END_COMM) endFlag = true;
+    }
+    Serial.println("1.2");
+    delay(SINC_TIME_SLAVE_MS >> 2);
 }
 //Wait a syncronization flag to start the worm animation
 void waitSleep(uint8_t sclPin) {
