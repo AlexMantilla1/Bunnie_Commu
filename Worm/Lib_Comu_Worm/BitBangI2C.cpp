@@ -179,8 +179,6 @@ unsigned int waitFallFlankCopyingAll(unsigned char PIN, unsigned long timeout, u
 }
 
 // ******************* READ AND WRITE BYTE SLAVE FUNCTIOINS  *********************************
-
-
 unsigned char i2cSlaveRead7Bits(unsigned long timeout) {
 	unsigned char inByte = 0;
 	for (int i = 0; i < 7; ++i) {
@@ -265,39 +263,6 @@ unsigned int i2cSlaveRead9BitsCopying(unsigned long timeout, unsigned int* sdaPi
 	waitFallFlankCopyingAll( sclPin, timeout, sdaPines );
 	return inByte;
 }
-
-
-/* 
-//This Function reads sdaPin (connected to master) and copies it to sdaSlave (connected to Slave)
-unsigned char i2cSlaveReadByteCopyingOne(unsigned long timeout, unsigned int sdaSlave) {
-	unsigned char inByte = 0;
-	for (int i = 0; i < 8; ++i) {
-		waitRiseFlankCopyingOne( sclPin, timeout, sdaPin, sdaSlave );
-		if ( digitalRead( sdaPin ) ) {
-			inByte = (inByte << 1) | 0x01; // msbit first
-		} else {
-			inByte = (inByte << 1);
-		}
-	}
-	waitFallFlankCopyingOne( sclPin, timeout, sdaPin, sdaSlave ); //function ends with the scl fall flank
-	return inByte;
-}
-
-//This Function reads sdaPin (connected to master) and copies it to all sda ports 
-unsigned char i2cSlaveReadByteCopyingAll(unsigned long timeout, unsigned int* sdaPines) {
-	unsigned char inByte = 0;
-	for (int i = 0; i < 8; ++i) {
-		waitRiseFlankCopyingAll( sclPin, timeout, sdaPines );
-		if ( digitalRead( sdaPin ) ) {
-			inByte = (inByte << 1) | 0x01; // msbit first
-		} else {
-			inByte = (inByte << 1);
-		}
-	}
-	waitFallFlankCopyingAll( sclPin, timeout, sdaPines );
-	return inByte;
-}
-*/
 //This function reads a byte from sdaPin (connected to master) and returns it, while a given timeout.
 void i2cSlaveWriteByte(unsigned char outByte, unsigned long timeout) {
 	for (int i = 0; i < 8; ++i) {		
@@ -371,10 +336,8 @@ void i2cSlaveNack(unsigned long timeout) {	//Signal For a correct recieved messa
 // This Slave reads all his sda ports looking for a NACK from other slave. If a NACK is recieved, send a NACK to the master
 // and returns the sdaPines' position where the NACK was found
 unsigned int i2cSlaveNackFromSlave(unsigned long timeout, unsigned int* sdaPines) {	//Signal For a correct recieved message
-
 	//This function starts after a scl fall flank!
 	for (char i = 0; i < 4; i++) if(sdaPines[i] != sdaPin) pinMode(sdaPines[i],INPUT);
-	
 	while( !digitalRead(sclPin) ) // While scl is LOW, looking for some answer.
 		for( int i = 0 ; i < 4 ; i++ ) 
 			if( sdaPines[i] != sdaPin ) {
@@ -387,7 +350,6 @@ unsigned int i2cSlaveNackFromSlave(unsigned long timeout, unsigned int* sdaPines
 }
 
 unsigned int i2cSlaveNackFromOneSlave(unsigned long timeout, unsigned int sdaSlave) {	//Signal For a correct recieved message
-	
 	//This function starts after a scl fall flank!
 	while( !digitalRead(sclPin) ) { // While scl is LOW, looking for some answer.
 		pinMode(sdaSlave,INPUT);
@@ -412,31 +374,7 @@ void i2cSlaveAck(unsigned long timeout) {	//Signal For an incorrect message reci
 bool i2cSlaveWaitStartCondition(unsigned long timeout) { 
 	i2cSlaveHighScl();
 	i2cSlaveHighSda();
-	//pinMode(3,OUTPUT); digitalWrite(3,LOW);
-	/*
-	if(digitalRead(sclPin) & digitalRead(sdaPin)) {
-		pinMode(4,OUTPUT); digitalWrite(4,LOW);
-		if( waitFallFlank(sdaPin, timeout) == RISE_OR_FALL_FLANK_OK ) {
-			if( waitFallFlank(sclPin, timeout) == RISE_OR_FALL_FLANK_OK ) return 1;
-			else return 0;
-		}
-		else return 0; 
-		/*
-		while(digitalRead(sclPin)) {
-			if(!digitalRead(sdaPin)) {
-			while(digitalRead(sclPin)) {
-				if(timeout == 0) return 0;
-				timeout--;
-			}
-			return 1; 
-			}
-			if(timeout == 0) return 0;
-			timeout--; 
-		}
-		
-	} else return 0;*/
 	if( waitFallFlank(sdaPin, timeout) == RISE_OR_FALL_FLANK_OK ) {
-		//pinMode(4,OUTPUT); digitalWrite(4,LOW);
 		if( waitFallFlank(sclPin, timeout) == RISE_OR_FALL_FLANK_OK ) return 1;
 		else return 0;
 	} else return 0;
@@ -450,21 +388,8 @@ bool i2cSlaveWaitStartConditionCopying(unsigned long timeout, unsigned int* sdaP
 			if( waitFallFlankCopyingAll( sclPin, timeout, sdaPines ) == RISE_OR_FALL_FLANK_OK ) return 1;
 			else return 0; 
 		} else return 0; 
-		
-		/*
-		while(digitalRead(sclPin)) {
-			if(!digitalRead(sdaPin)) {
-			while(digitalRead(sclPin)) {
-				if(timeout == 0) return 0;
-				timeout--;
-			}
-			return 1; 
-			}
-			if(timeout == 0) return 0;
-			timeout--; 
-		}
-		*/
 	} else return 0;
+
 }
 //wait for the stop condition while a given timeout
 bool i2cSlaveWaitStopCondition(unsigned long timeout) {
@@ -491,6 +416,7 @@ bool i2cSlaveReadBit(unsigned long timeout) {
 	waitFallFlank( sclPin, timeout );
 	return bit;
 }
+
 //Read 1 bit from sdaPin (connected to Master) and copies this bit to the sdaSlave port (connected to Slave)
 bool i2cSlaveReadBitCopying(unsigned long timeout, unsigned int sdaSlave) {
 	i2cSlaveHighSda();
@@ -501,8 +427,6 @@ bool i2cSlaveReadBitCopying(unsigned long timeout, unsigned int sdaSlave) {
 }
 
 // #######################################   END  SLAVE   FUNCTIONS   ###########################################################
-
-
 
 // #############################################   MASTER   FUNCTIONS   ##########################################################
 
@@ -543,7 +467,6 @@ void i2cMasterWrite7Bits(unsigned int wait_us, unsigned int out7Bits) {
 	}
 	i2cMasterHighSda(wait_us);
 }
-
 
 void i2cMasterWriteByte(unsigned int wait_us, unsigned int outByte) {
 	unsigned char n;
@@ -622,7 +545,6 @@ unsigned int i2cMasterRead9Bits(unsigned int wait_us) {
 	}
 	return(inByte);
 }
-
  
 // ******************* ACK AND NACK SLAVE FUNCTIONS  *********************************
 
@@ -659,7 +581,6 @@ void i2cMasterStop(unsigned int wait_us) {
 
 // ******************* MASTER ADDITIONAL PROTOCOL FUNCTION *****************************
 
-
 // The Master reads one single bit.
 bool i2cMasterReadBit(unsigned int wait_us) { 
 	pinMode(sdaPin,INPUT);
@@ -675,7 +596,6 @@ bool i2cMasterReadBit(unsigned int wait_us) {
 		return 0;
 	}
 }
-
 
 // #######################################   END  MASTER   FUNCTIONS   ###########################################################
 
@@ -704,13 +624,9 @@ bool checkParity(unsigned int data) {
 	while (data) { 
 		count += data & 1; 
 		data >>= 1; 
-	} 
-	count = count & 1 ? 0 : 1;
-	if(count) { 
-		return true ;
-	} else { 
-		return false ;
-    }
+	}
+	count = (count & 1 ? 0 : 1);
+	return count;
 }
 
 //This funciton removes the parity bit (MSB)
@@ -729,7 +645,6 @@ void i2cMasterSyncUp(unsigned int wait_us) {
 	delayMicroseconds(wait_us);
 	pinMode(sclPin,OUTPUT);
 	digitalWrite(sclPin,LOW);
-	//delayMillisecond(1000);
 	delay(300);
 	pinMode(sdaPin,INPUT);
 	delayMicroseconds(wait_us);
@@ -742,40 +657,23 @@ unsigned int i2cSlaveSyncUp(unsigned long timeout) {
 	unsigned long i = timeout << 1;
 	while(i > 0) {
 		if(!digitalRead(sclPin)) {
-			if(!digitalRead(sdaPin)) {
-				i--;
-			} else {			
-				return COMM_NOT_FOUND; //The communication was not with him.
-			}
-		} else {
-			return COMM_NOT_FOUND; //The communication was not with him.
-		}
+			if(!digitalRead(sdaPin)) i--;
+			else return COMM_NOT_FOUND; //The communication was not with him.
+		} else return COMM_NOT_FOUND; //The communication was not with him.
 	}
-	Serial.println("Waiting no matter what!"); //eliminar esto.
-	waitUntilRiseFlank(sdaPin);
-	waitRiseFlank(sclPin,timeout);
-	//waitRiseFlank(sdaPin, timeout);
-	//Serial.print("waitRiseFlank(sclPin, timeout) es: "); Serial.println(waitRiseFlank(sclPin, timeout),DEC);
-	//waitRiseFlank(sclPin, timeout);
-	//digitalWrite(2,LOW);
-	//pinMode(2,OUTPUT);
+	//Serial.println("Waiting no matter what!"); //eliminar esto.
+	while (!digitalRead(sdaPin)); // sda is low and wait for sda Rise flank.
+	if(!digitalRead(sclPin)) { //means the flag is for a new communication.
+		waitRiseFlank(sclPin,timeout);
+		return COMM_FOUND; //The communication was with him.
+	} else return END_COMM; //means the flag is for end communication.
 	
-	return COMM_FOUND; //The communication was with him.
-	/*
-	pinMode(sclPin,INPUT);
-	for (unsigned long i = 0; i < timeout; i++) {
-		while (!digitalRead(sclPin)) {
-			if(!digitalRead(sdaPin)) return COMM_FOUND; //The communication was with him.
-		}
-	return COMM_NOT_FOUND; //The communication was not with him.
-	}
-	*/
 }
 //Slave Sync Up copying
 unsigned int i2cSlaveSyncUpCopying(unsigned long timeout, unsigned int* sdaPines) {
 
 	pinMode(sclPin,INPUT);
-	bool flag = true;
+	bool flag = true; // flag to avoid to be setting 0 in SDAs every cicle.
 	unsigned long i = timeout << 1;
 	while(i > 0) {
 		if(!digitalRead(sclPin)) {
@@ -798,45 +696,17 @@ unsigned int i2cSlaveSyncUpCopying(unsigned long timeout, unsigned int* sdaPines
 		} else {
 			//Copies the flag to the othres ports
 			for (char i = 0; i < 4; i++) if (sdaPines[i] != sdaPin) pinMode(sdaPines[i],INPUT);			
-			return END_COMM; //The communication was not with him.
+			return COMM_NOT_FOUND; //The communication was not with him.
 		}
 	}
-	Serial.println("Waiting no matter what!"); //eliminar esto.
-	waitUntilRiseFlank(sdaPin);
-	waitRiseFlank(sclPin,timeout);
-	//waitRiseFlank(sdaPin, timeout);
-	//Serial.print("waitRiseFlank(sclPin, timeout) es: "); Serial.println(waitRiseFlank(sclPin, timeout),DEC);
-	//waitRiseFlank(sclPin, timeout);
-	//digitalWrite(2,LOW);
-	//pinMode(2,OUTPUT);
-	
-	return COMM_FOUND; //The communication was with him.
+	//Serial.println("Waiting no matter what!"); //eliminar esto.
+	while (!digitalRead(sdaPin)); // sda is low and wait for sda Rise flank.
+	for (char i = 0; i < 4; i++) if (sdaPines[i] != sdaPin) pinMode(sdaPines[i],INPUT);	
+	if(!digitalRead(sclPin)) { //means the flag is for a new communication.
+		waitRiseFlank(sclPin,timeout);
+		return COMM_FOUND; //The communication was with him.
+	} else return END_COMM; //means the flag is for end communication.
 
-	pinMode(sclPin,INPUT);
-	//este es el cod que agregué
-	// RECUERDE QUE AÑADIÒ UNA VARIABLE "syncAns" que almacena lo que retorna esta función, para retornarlo al nivel superior.
-	//Hasta aquí!
-	while (!digitalRead(sclPin)) {
-		if(!digitalRead(sdaPin)) {
-			for (char i = 0; i < 4; i++) { //Copies the flag to the othres ports
-				if (sdaPines[i] != sdaPin) {
-					pinMode(sdaPines[i],OUTPUT);
-					digitalWrite(sdaPines[i],LOW);
-				}
-			}
-			// añadió este cod
-			waitRiseFlankCopyingAll(sdaPin,timeout,sdaPines);  // y estooooooooooooooooooooooooooooooooo
-			delayMicroseconds(10);
-			if ( digitalRead(sclPin) ) return END_COMM;
-			else {
-				waitRiseFlankCopyingAll(sclPin,timeout,sdaPines);  // y estooooooooooooooooooooooooooooooooo
-				return COMM_FOUND; //The communication was with him.
-			}
-			//hasta aqui
-		}
-	}
-	return COMM_NOT_FOUND; //The communication was not with him.
-	
 }
 // #######################################  END SYNCHRONIZATION   FUNCTIONS   ###########################################################
 
@@ -845,8 +715,6 @@ unsigned int i2cSlaveSyncUpCopying(unsigned long timeout, unsigned int* sdaPines
 
 // en que posicion est� el pin sda
 unsigned char i2cGetSdaRef(unsigned int sda, unsigned int* sda_pines) { 
-	for (char n = 0 ; n < 4 ; n++) { 
-		if( sda_pines[n] == sda ) return n;
-	}
+	for (char n = 0 ; n < 4 ; n++) if( sda_pines[n] == sda ) return n;
 } 
 // #######################################   END  nuevo  ###########################################################

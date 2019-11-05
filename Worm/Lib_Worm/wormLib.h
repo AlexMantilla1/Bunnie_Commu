@@ -46,7 +46,7 @@ uint32_t convertOrderToDelays(uint8_t* order);
 //Calculate the Delays needed to syncronize the worm.
 uint32_t calDelays( unsigned char* dataStored );
 //Send the data to the slaves con configure the worm secuency.
-void sendDataToSlaves(uint32_t delays, unsigned char* dataStored);
+void sendDataToSlaves(uint32_t delays, unsigned char* dataStored, unsigned char* sdaToFind, unsigned int* sdaPines);
 //Make the flag to end the communication.
 void endCommu();
 //Calculates the dir for the worm in master.

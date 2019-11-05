@@ -63,7 +63,7 @@ void setup(){
 void loop() {
   //Make the check for slave positions.
   
-  Serial.print("1");
+  Serial.println("1");
   /*
   delay(110);
   pinMode(7,OUTPUT);

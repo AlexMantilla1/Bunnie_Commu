@@ -3,9 +3,18 @@
 #ifndef SOFTWARE_I2C
 #define SOFTWARE_I2C
 
+#define Arduino_LEDS
+//#define SAMD11
+
+#ifdef Arduino_LEDS
 #include <Arduino.h>
 #include <stdint.h>
 #include <BitBangI2C.h>
+#endif
+#ifdef SAMD11
+#include "ArduinoLike.h"
+#include "BitBangI2C.h"
+#endif
 
 #define I2C_OK						0
 #define I2C_MASTER_DATA_READ_ERROR			1 
@@ -62,8 +71,8 @@
 #define SDA_TO_MASTER		5
 #define LAST_SDA_TO_SLAVE	6
 
-#define NUM_OF_TRIES        8
-#define NUM_OF_TRIES2		50
+#define NUM_OF_TRIES        3
+#define NUM_OF_TRIES2		10
 #define MASTER_CONNECTED	0x1F	
 
 //OPERATION MODES
@@ -102,7 +111,7 @@ void cleanSlave( uint8_t slaveNumber, char slaveAdd, unsigned char* dataStored )
 // Slave set Up
 void i2cSlaveSetUp(unsigned long timeout, unsigned char* dataStored, unsigned int* sdaPines);
 // Master check
-unsigned int i2cMasterCheck( unsigned char* dataStored, unsigned int* sdaPines );
+unsigned int i2cMasterCheck( unsigned char* dataStored, unsigned int* sdaPines, unsigned char* sdaToFind );
 // ################# END MAP FUNCTIONS #############
 
 #endif

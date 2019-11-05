@@ -3,7 +3,15 @@
 #ifndef BITBANG_I2C
 #define BITBANG_I2C
 
+#define Arduino_LEDS
+//#define SAMD11
+
+#ifdef Arduino_LEDS
 #include <Arduino.h>
+#endif
+#ifdef SAMD11
+#include "ArduinoLike.h"
+#endif
 
 #define RISE_OR_FALL_FLANK_OK		0
 #define FALL_FLANK_TIMEOUT_ERROR	20
@@ -17,6 +25,14 @@
 #define END_COMM		48
 
 #define STOP_TIMEOUT    0xFFF
+
+#ifdef Arduino_LEDS
+#define WAITING_FLAG	12
+#endif
+#ifdef SAMD11
+#define WAITING_FLAG    10
+#endif
+
 
 void i2cPinesDefine(unsigned int sda_Pin, unsigned int scl_Pin);
 
@@ -40,7 +56,7 @@ void i2cSlaveSdasLow(unsigned int* sdaPines);
 
 
 // ******************* SLAVE NEEDS TO READ THE RISE AND FALL SCL/SDA FLANK *********************************
-#define WAITING_FLAG	12
+
 void turnOnFlag(uint8_t pin);
 void turnOffFlag(uint8_t pin);
 //Wait the rise flank no matter what. >:v.

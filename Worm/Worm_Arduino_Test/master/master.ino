@@ -48,6 +48,7 @@ uint8_t slaveAdress[] = {10 , 20 , 30};
 unsigned char dataStored[128];
 unsigned int checkAns;
 uint32_t order, dir;
+unsigned char sdaToFind[3] = {0,0,0};
 
 #ifdef ARDUINO_LEDS
 void printMemory2(int hasta) {
@@ -79,13 +80,13 @@ void loop() {
   //Make the check for slave positions.
   //
   Serial.println("1");
-  checkAns = i2cMasterCheck( &dataStored[0], &sdaPines[0] );
+  checkAns = i2cMasterCheck( &dataStored[0], &sdaPines[0], &sdaToFind[0] );
   if ( checkAns == NEW_DEVICE_FOUND || checkAns == DEVICE_LOST ) {
     Serial.println("2");
       // Calculate new data and send data for slaves.
       
-      //printMemory2(22);
-      sendDataToSlaves(calDelays(&dataStored[0]), &dataStored[0]);
+      printMemory2(22);
+      sendDataToSlaves(calDelays(&dataStored[0]), &dataStored[0], &sdaToFind[0], &sdaPines[0]);
       Serial.println("2.5");
       //cal the dir
       dataStored[MASTER_MEMORY_WORM_DIR] = calDirMaster(&dataStored[0], dataStored[MASTER_MEMORY_DELAY_B_WORMS]);

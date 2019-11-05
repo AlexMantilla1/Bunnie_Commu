@@ -57,7 +57,7 @@ void setup(){
 // Slave2
 void loop() {
   
-  Serial.print("1");
+  Serial.println("1");
   slaveListeningState(timeout, &dataStored[0], &sdaPines[0]);
   dataStored[SLAVE_MEMORY_WORM_DIR] = calDirSlave(&dataStored[0], dataStored[SLAVE_MEMORY_DELAY_B_WORMS]);
   //waitSleep(scl);
