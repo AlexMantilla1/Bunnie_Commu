@@ -86,7 +86,7 @@ void makeWormDown(uint32_t wormSize, uint32_t delayTime_ms) {
 void makeWorm(uint32_t wormSize, uint32_t delayTime_ms, bool param, uint8_t waits) {
     //this sould be wormTime_ms = 255*(8+3) = 2805; cabe en los 16 bits del int.
     //Serial.print("waits es: "); Serial.println(waits,DEC);
-    unsigned int wormTime_ms = delayTime_ms*(8+wormSize);
+    uint16_t wormTime_ms = delayTime_ms*(8+wormSize);
     //Serial.print("wormTime_ms es: "); Serial.println(wormTime_ms,DEC);
     uint16_t algo = (waits >> 4)*wormTime_ms;
     //Serial.print("1. algo es: "); Serial.println(algo,DEC);
@@ -125,7 +125,7 @@ uint32_t convertOrderToDelays(uint8_t* order, uint8_t num) {
     return reg;
 }
 //Calculate the Delays needed to syncronize the worm.
-uint32_t calDelays( unsigned char* dataStored ) {
+uint32_t calDelays( uint8_t* dataStored ) {
     // variables
     uint8_t num = 0; // slaves found
     uint8_t cnt = 0;
@@ -263,13 +263,13 @@ uint32_t calDelays( unsigned char* dataStored ) {
     return convertOrderToDelays( &order[0],num );
 }
 //Send the data to the slaves con configure the worm secuency.
-void sendDataToSlaves(uint32_t delays, unsigned char* dataStored, unsigned char* sdaToFind, unsigned int* sdaPines) {
+void sendDataToSlaves(uint32_t delays, uint8_t* dataStored, uint8_t* sdaToFind, uint16_t* sdaPines) {
     Serial.print("delays es: "); Serial.println(delays,HEX);
     for (uint8_t i = 0; i < 4; i++) {
         uint8_t data = ( delays >> (24 - i*8) ) & 0xFF;
         //Serial.print("data es: "); Serial.println(data,BIN);
         //Serial.print("sdaToFind[i] es: "); Serial.println(sdaToFind[i],BIN);
-        if(i < 3) { 
+        if(i < 3) {
             if (data != 0x0) {
                 setSDA(sdaPines[sdaToFind[i]]);
                 while( i2cMasterWrite( (dataStored[MASTER_MEMORY_S1_ADD+i] >> 3 ), SLAVE_MEMORY_DELAY_B_WORMS, data ) != I2C_OK );
@@ -296,7 +296,7 @@ void endCommu() {
     delay(SINC_TIME_MASTER_MS);
 }
 //Calculates the dir for the worm in master.
-bool calDirMaster(unsigned char* dataStored, uint32_t data) {
+bool calDirMaster(uint8_t* dataStored, uint32_t data) {
     uint8_t num = 0; //number of devices connected
     uint8_t slaveRefs[3] = {4,4,4};
     uint8_t order = (data >> 4) + 1;
@@ -330,14 +330,14 @@ bool calDirMaster(unsigned char* dataStored, uint32_t data) {
 // ############################################# END For Master #############################################
 // ############################################# For slave #############################################
 //Keep the Listening state until the end flag
-void slaveListeningState(unsigned long timeout, unsigned char* dataStored, unsigned int* sdaPines) {
+void slaveListeningState(uint32_t timeout, uint8_t* dataStored, uint16_t* sdaPines) {
     bool endFlag = false;
     delay(SINC_TIME_SLAVE_MS >> 1);
     while (!endFlag) if ( i2cSlaveListeningCopying(timeout, dataStored, sdaPines) == END_COMM ) endFlag = true;
     delay(SINC_TIME_SLAVE_MS >> 1);
 }
 //Calculates the dir for the worm in slaves.
-bool calDirSlave(unsigned char* dataStored, uint32_t data) {
+bool calDirSlave(uint8_t* dataStored, uint32_t data) {
     uint8_t num = 0; //number of devices connected
     uint8_t masterRef = 4;
     uint8_t slaveRef1 = 4;

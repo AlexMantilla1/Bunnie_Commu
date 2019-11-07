@@ -17,7 +17,7 @@
 #endif
 
 #define I2C_OK						0
-#define I2C_MASTER_DATA_READ_ERROR			1 
+#define I2C_MASTER_DATA_READ_ERROR			1
 #define I2C_MASTER_SLAVEADD_WRITE_ERROR			2
 #define I2C_MASTER_DATAADD_WRITE_ERROR			3
 #define I2C_MASTER_DATA_WRITE_ERROR			4
@@ -64,7 +64,7 @@
 #define SLAVE_MEMORY_SDA_SLAVE		6
 
 #define RIGHT_REF			0
-#define UP_REF				1				
+#define UP_REF				1
 #define LEFT_REF			2
 #define DOWN_REF			3
 #define SLAVE_SU_FLAG		4
@@ -73,7 +73,7 @@
 
 #define NUM_OF_TRIES        3
 #define NUM_OF_TRIES2		10
-#define MASTER_CONNECTED	0x1F	
+#define MASTER_CONNECTED	0x1F
 
 //OPERATION MODES
 #define MASTER_MODE		0
@@ -81,37 +81,37 @@
 
 // #######################################   SOFTWARE   FUNCTIONS   ###########################################################
 // Node configuration
-void i2cConfig(unsigned int mode, unsigned int sda_Pin, unsigned int scl_Pin, unsigned int param);
+void i2cConfig(uint16_t mode, uint16_t sda_Pin, uint16_t scl_Pin, uint16_t param);
 // Slave acting as a wire
-unsigned int i2cSlaveListeningCopying(unsigned long timeout, unsigned char* dataStored, unsigned int* sdaPines);
+uint16_t i2cSlaveListeningCopying(uint32_t timeout, uint8_t* dataStored, uint16_t* sdaPines);
 // Slave Single listening
-unsigned int i2cSlaveListening(unsigned long timeout, unsigned char* dataStored, unsigned int* sdaPines);
+uint16_t i2cSlaveListening(uint32_t timeout, uint8_t* dataStored, uint16_t* sdaPines);
 // Master Read
-unsigned int i2cMasterRead(unsigned char slaveAdress, unsigned char regAdress, unsigned char* readValue );
+uint16_t i2cMasterRead(uint8_t slaveAdress, uint8_t regAdress, uint8_t* readValue );
 // Master Write
-unsigned int i2cMasterWrite( unsigned char slaveAdress, unsigned char regAdress, unsigned char newRegValue );
+uint16_t i2cMasterWrite( uint8_t slaveAdress, uint8_t regAdress, uint8_t newRegValue );
 
 
 // #######################################   END  SOFTWARE   FUNCTIONS   ###########################################################
 
 // *********** Useful **************
-void i2cSetSlaveAddressesForMaster (unsigned char* slaveAddress, unsigned char* dataStored);
+void i2cSetSlaveAddressesForMaster (uint8_t* slaveAddress, uint8_t* dataStored);
 //Set a new sda to communicate
-void setSDA (unsigned int newSda);
+void setSDA (uint16_t newSda);
 // Get the slave number according his address
-unsigned int getSlaveNumber( char add, unsigned char* dataStored );
+uint16_t getSlaveNumber( char add, uint8_t* dataStored );
 /*// get the position and offset.
-unsigned int getSlavePosition( char add, unsigned char* dataStored );
-uint8_t getSlaveOffset( uint8_t position, unsigned char* dataStored );
+uint16_t getSlavePosition( char add, uint8_t* dataStored );
+uint8_t getSlaveOffset( uint8_t position, uint8_t* dataStored );
 */
 //clean the data if an slave has been disconnected.
-void cleanSlave( uint8_t slaveNumber, char slaveAdd, unsigned char* dataStored );
+void cleanSlave( uint8_t slaveNumber, char slaveAdd, uint8_t* dataStored );
 
 // ################### MAP FUNCTIONS ###############
 // Slave set Up
-void i2cSlaveSetUp(unsigned long timeout, unsigned char* dataStored, unsigned int* sdaPines);
+void i2cSlaveSetUp(uint32_t timeout, uint8_t* dataStored, uint16_t* sdaPines);
 // Master check
-unsigned int i2cMasterCheck( unsigned char* dataStored, unsigned int* sdaPines, unsigned char* sdaToFind );
+uint16_t i2cMasterCheck( uint8_t* dataStored, uint16_t* sdaPines, uint8_t* sdaToFind );
 // ################# END MAP FUNCTIONS #############
 
 #endif

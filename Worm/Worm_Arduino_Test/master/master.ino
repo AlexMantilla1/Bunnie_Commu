@@ -4,10 +4,10 @@
 
 /*
 * A�ad�:
-* + algo aqu� i2cSlaveSyncUpCopying(unsigned int* sdaPines) en BitBangI2C.cpp. Le puse un argumento m�s (modificar .h)
+* + algo aqu� i2cSlaveSyncUpCopying(uint16_t* sdaPines) en BitBangI2C.cpp. Le puse un argumento m�s (modificar .h)
 * + algo aqu� i2cSlaveListeningCopying(...) en SoftwareI2C.cpp, la syncAns que se retorna.
 * + debo modificar el tiempo de sync a 6 ms
-* + modifiqu� i2cMasterCheck para que retorne si encuentra un nuevo dispositivo. La convert� de void a unsigned int.
+* + modifiqu� i2cMasterCheck para que retorne si encuentra un nuevo dispositivo. La convert� de void a uint16_t.
 *   Agregu� 4 defines para respuetas. Agrego variable "message" (line 526) para llenarla en las l�neas 538,544,560,591 y retornarla en la 612
 */
 
@@ -30,7 +30,7 @@
 #define HIGH            1
 #define LOW             0
 
-unsigned int sdaPines[4] = {1,5,7,4};  //SAMD11
+uint16_t sdaPines[4] = {1,5,7,4};  //SAMD11
 uint8_t scl = 14;                      //SAMD11
 #endif
 
@@ -38,17 +38,17 @@ uint8_t scl = 14;                      //SAMD11
 #include <SoftwareI2C.h>
 #include <wormLib.h>
 
-unsigned int sdaPines[4] = {2,3,4,5};    //Arduino
+uint16_t sdaPines[4] = {2,3,4,5};    //Arduino
 uint8_t scl = 7;                         //Arduino
 
 #endif
 
-uint32_t T_us = 1000;
+uint16_t T_us = 1000;
 uint8_t slaveAdress[] = {10 , 20 , 30};
-unsigned char dataStored[128];
-unsigned int checkAns;
+uint8_t dataStored[128];
+uint16_t checkAns;
 uint32_t order, dir;
-unsigned char sdaToFind[3] = {0,0,0};
+uint8_t sdaToFind[3] = {0,0,0};
 
 #ifdef ARDUINO_LEDS
 void printMemory2(int hasta) {
@@ -66,10 +66,10 @@ void setup(){
   Serial.println("Master Started! ");
   #endif
   //fill the memory
-  for(int i = 0; i < 128 ; i++) dataStored[i] = 0x0;
-  dataStored[MASTER_MEMORY_WORM_DELAY] = (unsigned char) DELAY_WORM_MS;
+  for(uint16_t i = 0; i < 128 ; i++) dataStored[i] = 0x0;
+  dataStored[MASTER_MEMORY_WORM_DELAY] = (uint8_t) DELAY_WORM_MS;
   dataStored[MASTER_MEMORY_WORM_SIZE] = 3;
-  dataStored[MASTER_MEMORY_WORM_DIR] = (unsigned char) WORM_0_TO_8; //default
+  dataStored[MASTER_MEMORY_WORM_DIR] = (uint8_t) WORM_0_TO_8; //default
 
   i2cConfig( MASTER_MODE, sdaPines[0], scl, T_us );
   i2cSetSlaveAddressesForMaster(&slaveAdress[0] , &dataStored[0]);
@@ -84,16 +84,15 @@ void loop() {
   if ( checkAns == NEW_DEVICE_FOUND || checkAns == DEVICE_LOST ) {
     Serial.println("2");
       // Calculate new data and send data for slaves.
-      
+
       printMemory2(22);
       sendDataToSlaves(calDelays(&dataStored[0]), &dataStored[0], &sdaToFind[0], &sdaPines[0]);
       Serial.println("2.5");
       //cal the dir
       dataStored[MASTER_MEMORY_WORM_DIR] = calDirMaster(&dataStored[0], dataStored[MASTER_MEMORY_DELAY_B_WORMS]);
-      
+
   }
   Serial.println("3");
-  
   //end comu.
   endCommu();
   Serial.println("4");

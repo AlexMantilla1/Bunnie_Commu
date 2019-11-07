@@ -44,21 +44,21 @@ uint8_t getSlaveAtSide(uint8_t ref);
 //Convert the orders to a 32 bits register with the delays for all the slaves and the master.
 uint32_t convertOrderToDelays(uint8_t* order);
 //Calculate the Delays needed to syncronize the worm.
-uint32_t calDelays( unsigned char* dataStored );
+uint32_t calDelays( uint8_t* dataStored );
 //Send the data to the slaves con configure the worm secuency.
-void sendDataToSlaves(uint32_t delays, unsigned char* dataStored, unsigned char* sdaToFind, unsigned int* sdaPines);
+void sendDataToSlaves(uint32_t delays, uint8_t* dataStored, uint8_t* sdaToFind, uint16_t* sdaPines);
 //Make the flag to end the communication.
 void endCommu();
 //Calculates the dir for the worm in master.
-bool calDirMaster(unsigned char* dataStored, uint32_t data);
+bool calDirMaster(uint8_t* dataStored, uint32_t data);
 // ############################################# END For Master #############################################
 // ############################################# For slave #############################################
 //Keep the Listening state until the end flag
-void slaveListeningState(unsigned long timeout, unsigned char* dataStored, unsigned int* sdaPines);
+void slaveListeningState(uint32_t timeout, uint8_t* dataStored, uint16_t* sdaPines);
 //Wait a syncronization flag to start the worm animation
 void waitSleep(uint8_t sclPin);
 //Calculates the dir for the worm in slaves.
-bool calDirSlave(unsigned char* dataStored, uint32_t data);
+bool calDirSlave(uint8_t* dataStored, uint32_t data);
 // ############################################# END For slave #############################################
 
 #endif

@@ -12,10 +12,10 @@
 */
 /*
 * A�ad�:
-* + algo aqu� i2cSlaveSyncUpCopying(unsigned int* sdaPines) en BitBangI2C.cpp. Le puse un argumento m�s (modificar .h)
+* + algo aqu� i2cSlaveSyncUpCopying(uint16_t* sdaPines) en BitBangI2C.cpp. Le puse un argumento m�s (modificar .h)
 * + algo aqu� i2cSlaveListeningCopying(...) en SoftwareI2C.cpp, la syncAns que se retorna.
 * + debo modificar el tiempo de sync a 6 ms
-* + modifiqu� i2cMasterCheck para que retorne si encuentra un nuevo dispositivo. La convert� de void a unsigned int.
+* + modifiqu� i2cMasterCheck para que retorne si encuentra un nuevo dispositivo. La convert� de void a uint16_t.
 *   Agregu� 4 defines para respuetas. Agrego variable "message" (line 526) para llenarla en las l�neas 538,544,560,591 y retornarla en la 612
 */
 
@@ -31,12 +31,12 @@
 #include <SoftwareI2C.h>
 
 uint32_t slaveAddres = 10;        //Address for this slave.
-//unsigned int sdaPines[4] = {1,5,7,4};  //SAMD11
+//uint16_t sdaPines[4] = {1,5,7,4};  //SAMD11
 //uint8_t scl = 14;                      //SAMD11
-unsigned int sdaPines[4] = {2,3,4,5};    //Arduino
+uint16_t sdaPines[4] = {2,3,4,5};    //Arduino
 uint8_t scl = 7;                         //Arduino
-unsigned long timeout = 0xFFF;
-unsigned char dataStored[128];
+uint32_t timeout = 0xFFF;
+uint8_t dataStored[128];
 
 void printMemory2(int hasta) {
   Serial.println("Memory:");
@@ -45,12 +45,12 @@ void printMemory2(int hasta) {
   }
 }
 
-void setup(){
+void setup() {
   Serial.begin(9600);
   Serial.print("Slave Started! "); Serial.println(slaveAddres,BIN);
    //fill the memory
   for(int i = 0; i < 128 ; i++) dataStored[i] = 0x0;
-  dataStored[SLAVE_MEMORY_WORM_DELAY] = (unsigned char) DELAY_WORM_MS;
+  dataStored[SLAVE_MEMORY_WORM_DELAY] = (uint8_t) DELAY_WORM_MS;
   dataStored[SLAVE_MEMORY_WORM_SIZE] = 3;
   //dataStored[SLAVE_MEMORY_WORM_DIR] = WORM_0_TO_8;
   //Slave Config
@@ -62,7 +62,7 @@ void setup(){
 // Slave1
 void loop() {
   //Make the check for slave positions.
-  
+
   Serial.println("1");
   /*
   delay(110);
