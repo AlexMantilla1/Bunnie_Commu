@@ -58,7 +58,7 @@ void slaveListeningState(uint32_t timeout, uint8_t* dataStored, uint16_t* sdaPin
 //Wait a syncronization flag to start the worm animation
 void waitSleep(uint8_t sclPin);
 //Calculates the dir for the worm in slaves.
-bool calDirSlave(uint8_t* dataStored, uint32_t data);
+bool calDirSlave(uint8_t* dataStored);
 // ############################################# END For slave #############################################
 
 #endif

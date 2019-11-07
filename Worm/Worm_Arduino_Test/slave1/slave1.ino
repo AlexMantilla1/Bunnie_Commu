@@ -72,7 +72,7 @@ void loop() {
   */
   slaveListeningState(timeout, &dataStored[0], &sdaPines[0]);
   Serial.println("1.5");
-  dataStored[SLAVE_MEMORY_WORM_DIR] = calDirSlave(&dataStored[0], dataStored[SLAVE_MEMORY_DELAY_B_WORMS]);
+  dataStored[SLAVE_MEMORY_WORM_DIR] = calDirSlave(&dataStored[0]);
   //waitSleep(scl);
   Serial.println("2");
   makeWorm( dataStored[SLAVE_MEMORY_WORM_SIZE],

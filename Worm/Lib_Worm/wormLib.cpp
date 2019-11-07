@@ -83,7 +83,7 @@ void makeWormDown(uint32_t wormSize, uint32_t delayTime_ms) {
     }
 }
 // Making the worm animation.
-void makeWorm(uint32_t wormSize, uint32_t delayTime_ms, bool param, uint8_t waits) {
+void makeWorm(uint32_t wormSize, uint32_t delayTime_ms, bool dir, uint8_t waits) {
     //this sould be wormTime_ms = 255*(8+3) = 2805; cabe en los 16 bits del int.
     //Serial.print("waits es: "); Serial.println(waits,DEC);
     uint16_t wormTime_ms = delayTime_ms*(8+wormSize);
@@ -91,7 +91,7 @@ void makeWorm(uint32_t wormSize, uint32_t delayTime_ms, bool param, uint8_t wait
     uint16_t algo = (waits >> 4)*wormTime_ms;
     //Serial.print("1. algo es: "); Serial.println(algo,DEC);
     delay( algo );
-    if (param) makeWormDown(wormSize,delayTime_ms);
+    if (dir) makeWormDown(wormSize,delayTime_ms);
     else makeWormUp(wormSize,delayTime_ms);
     algo = (waits & 0xF)*wormTime_ms;
     //Serial.print("2. algo es: "); Serial.println(algo,DEC);
@@ -337,25 +337,26 @@ void slaveListeningState(uint32_t timeout, uint8_t* dataStored, uint16_t* sdaPin
     delay(SINC_TIME_SLAVE_MS >> 1);
 }
 //Calculates the dir for the worm in slaves.
-bool calDirSlave(uint8_t* dataStored, uint32_t data) {
+bool calDirSlave(uint8_t* dataStored) {
     uint8_t num = 0; //number of devices connected
     uint8_t masterRef = 4;
     uint8_t slaveRef1 = 4;
     uint8_t slaveRef2 = 4;
-    uint8_t order = (data >> 4) + 1;
-    bool dir = WORM_8_TO_0; //0 or false.
+    uint8_t order = (dataStored[SLAVE_MEMORY_DELAY_B_WORMS] >> 4) + 1;
+    bool dir = WORM_8_TO_0; //1 or true.
 
+    //count the number of devices connected.
     for (uint8_t i = 0; i < 4; i++) {
         if(dataStored[i] != 0) {
             num++;
-            if(dataStored[i] == 0x1F) masterRef = i;
+            if(dataStored[i] == MASTER_CONNECTED) masterRef = i;
             else if(slaveRef1 == 4) slaveRef1 = i;
             else slaveRef2 = i;
         }
     }
     switch (num) {
         case 1:
-            if (masterRef > 1) dir = WORM_0_TO_8;
+            if (order < 2 && masterRef > 1) dir = WORM_0_TO_8;
             break;
         case 2:
             if (slaveRef1 > 1) dir = WORM_8_TO_0;
