@@ -128,10 +128,11 @@ uint32_t convertOrderToDelays(uint8_t* order, uint8_t num) {
 uint32_t calDelays( uint8_t* dataStored ) {
     // variables
     uint8_t num = 0; // slaves found
-    uint8_t cnt = 0;
+    //uint8_t cnt = 0;
     bool slavesConnec[3];
     uint8_t slavesPos[3];
-    uint8_t numSlavesToSlave[3];
+    uint8_t slaveSide[3];
+    ///uint8_t numSlavesToSlave[3];
     uint8_t order[4]; // Master is the fourth position.
     //Number of slaves found.
     for (uint8_t i = 0; i < 3; i++) {
@@ -150,14 +151,16 @@ uint32_t calDelays( uint8_t* dataStored ) {
         uint8_t ref = slavesPos[i];
         if (slavesConnec[i]) {
             if ( slaveIsAtMasterSide(ref) ) {
-                numSlavesToSlave[i] = 0;
+                //numSlavesToSlave[i] = 0;
+                slaveSide[i] = slavesPos[i];
                 continue;
             }
             while (!flag) {
-                cnt++;
+                //cnt++;
                 ref = slavesPos[getSlaveAtSide(ref)];
                 if ( slaveIsAtMasterSide(ref) ) {
-                    numSlavesToSlave[i] = cnt;
+                    //numSlavesToSlave[i] = cnt;
+                    slaveSide[i] = slavesPos[i];
                     flag = true;
                 }
             }
@@ -166,7 +169,7 @@ uint32_t calDelays( uint8_t* dataStored ) {
     // Find the order
     for (uint8_t i = 0; i < 3; i++) order[i] = 0;
 
-    uint8_t temp = 3;
+    uint8_t slaveSideTemp = 4;
     uint8_t refTemp = 3;
     switch (num) {
         case 0: //the Master is alone.
@@ -178,26 +181,28 @@ uint32_t calDelays( uint8_t* dataStored ) {
             break;
         case 2: //2 Slaves connected.
 			;
+            dataStored[MASTER_MEMORY_WORM_DIR] = WORM_0_TO_8;
             for (uint8_t i = 0; i < 3; i++)
                 if(slavesConnec[i] == true) {
-                    if (temp == 3) {
-                        temp = slavesPos[i];
+                    if (slaveSideTemp == 4) {
+                        slaveSideTemp = slaveSide[i];
                         refTemp = i;
-                    } else if (temp == slavesPos[i]) {
-                        order[refTemp] = 1;
-                        order[3] = 2;
-                        order[i] = 3;
-                    } else if (temp < slavesPos[i]){
-                        order[i] = 1;
-                        order[refTemp] = 2;
+                    } else if (slaveSideTemp == slaveSide[i]) { //Right line
+                        order[refTemp] = (slavesPos[refTemp] > slavesPos[refTemp]) ? 1 : 2;
                         order[3] = 3;
+                        order[i] = (slavesPos[refTemp] > slavesPos[refTemp]) ? 2 : 1;
+                    } else if (slaveSideTemp < slaveSide[i]){
+                        order[i] = 1;
+                        order[refTemp] = 3;
+                        order[3] = 2;
+                        if(slaveSide[i] == 3) dataStored[MASTER_MEMORY_WORM_DIR] = WORM_8_TO_0;
                     } else {
                         order[refTemp] = 1;
-                        order[i] = 2;
-                        order[3] = 3;
+                        order[i] = 3;
+                        order[3] = 2;
+                        if(slaveSideTemp == 3) dataStored[MASTER_MEMORY_WORM_DIR] = WORM_8_TO_0;
                     }
                 }
-            break;
         case 3: //3 Slaves connected. //esta no funciona por ahora
             //line recta.
             ;
@@ -296,10 +301,10 @@ void endCommu() {
     delay(SINC_TIME_MASTER_MS);
 }
 //Calculates the dir for the worm in master.
-bool calDirMaster(uint8_t* dataStored, uint32_t data) {
+bool calDirMaster(uint8_t* dataStored) {
     uint8_t num = 0; //number of devices connected
     uint8_t slaveRefs[3] = {4,4,4};
-    uint8_t order = (data >> 4) + 1;
+    uint8_t order = (dataStored[MASTER_MEMORY_DELAY_B_WORMS] >> 4) + 1;
     bool dir = WORM_0_TO_8; //0 or false.
 
     for (uint8_t i = 0; i < 3; i++) {
@@ -311,13 +316,10 @@ bool calDirMaster(uint8_t* dataStored, uint32_t data) {
     }
     switch (num) {
         case 1:
-            if (slaveRefs[0] == 3 || slaveRefs[1] == 3 || slaveRefs[2] == 3) dir = WORM_8_TO_0;
+            if ((order > 1) && (slaveRefs[0] == 3 || slaveRefs[1] == 3 || slaveRefs[2] == 3)) dir = WORM_8_TO_0;
             break;
         case 2:
-            if (slaveRefs[0] == 3 || slaveRefs[1] == 3 ) dir = WORM_8_TO_0;
-            else if (slaveRefs[0] == 1 || slaveRefs[1] == 1) dir = WORM_0_TO_8;
-            else if (slaveRefs[0] == 0 && (slaveRefs[1] == 1 || slaveRefs[2] == 1)) dir = WORM_8_TO_0;
-            else if (slaveRefs[1] == 0 && (slaveRefs[2] == 1)) dir = WORM_8_TO_0;
+            dir = dataStored[MASTER_MEMORY_WORM_DIR];
             break;
         case 3:
             //not cosidered yet.
@@ -359,9 +361,9 @@ bool calDirSlave(uint8_t* dataStored) {
             if (order < 2 && masterRef > 1) dir = WORM_0_TO_8;
             break;
         case 2:
-            if (slaveRef1 > 1) dir = WORM_8_TO_0;
-            else if (masterRef > 1 || slaveRef1 == 1) dir = WORM_0_TO_8;
-            else if (slaveRef1 == 1) dir = WORM_8_TO_0;
+            //if (slaveRef1 > 1) dir = WORM_8_TO_0;
+            if(masterRef == 3) dir = WORM_0_TO_8;
+            else if (masterRef == 0 && slaveRef1 == 1) dir = WORM_0_TO_8;
             break;
         case 3:
             //not cosidered yet.
