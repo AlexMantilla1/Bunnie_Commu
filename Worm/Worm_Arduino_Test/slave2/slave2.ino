@@ -50,21 +50,17 @@ void setup(){
   //dataStored[SLAVE_MEMORY_WORM_DIR] = WORM_0_TO_8;
   //Slave Config
   i2cConfig(SLAVE_MODE, sdaPines[0], scl, slaveAddres);
-  turnOffFlag(WAITING_FLAG);
+  //turnOffFlag(WAITING_FLAG);
   //Slave Set up
   i2cSlaveSetUp(timeout, &dataStored[0], &sdaPines[0]);
 }
 // Slave2
 void loop() {
 
-  Serial.println("1");
-  slaveListeningState(timeout, &dataStored[0], &sdaPines[0]);
-  dataStored[SLAVE_MEMORY_WORM_DIR] = calDirSlave(&dataStored[0], dataStored[SLAVE_MEMORY_DELAY_B_WORMS]);
-  //waitSleep(scl);
-  Serial.println("2");
-  makeWorm( dataStored[SLAVE_MEMORY_WORM_SIZE],
-            dataStored[SLAVE_MEMORY_WORM_DELAY],
-            dataStored[SLAVE_MEMORY_WORM_DIR],
-            dataStored[SLAVE_MEMORY_DELAY_B_WORMS] );
-  Serial.println("2");
+	slaveListeningState(timeout, &dataStored[0], &sdaPines[0]);
+	dataStored[SLAVE_MEMORY_WORM_DIR] = calDirSlave(&dataStored[0]);
+	makeWorm( dataStored[SLAVE_MEMORY_WORM_SIZE],
+	dataStored[SLAVE_MEMORY_WORM_DELAY],
+	dataStored[SLAVE_MEMORY_WORM_DIR],
+	dataStored[SLAVE_MEMORY_DELAY_B_WORMS] );
 }

@@ -78,34 +78,21 @@ void setup(){
 // Master
 void loop() {
   //Make the check for slave positions.
-  //
-  Serial.println("1");
-  checkAns = i2cMasterCheck( &dataStored[0], &sdaPines[0], &sdaToFind[0] );
-  if ( checkAns == NEW_DEVICE_FOUND || checkAns == DEVICE_LOST ) {
-    Serial.println("2");
-      // Calculate new data and send data for slaves.
+        checkAns = i2cMasterCheck( &dataStored[0], &sdaPines[0], &sdaToFind[0] );
+        if ( checkAns == NEW_DEVICE_FOUND || checkAns == DEVICE_LOST ) {
+	        // Calculate new data and send data for slaves.
 
-      printMemory2(22);
-      sendDataToSlaves(calDelays(&dataStored[0]), &dataStored[0], &sdaToFind[0], &sdaPines[0]);
-      Serial.println("2.5");
-      //cal the dir
-      dataStored[MASTER_MEMORY_WORM_DIR] = calDirMaster(&dataStored[0], dataStored[MASTER_MEMORY_DELAY_B_WORMS]);
+	        //printMemory2(22);
+	        sendDataToSlaves(calDelays(&dataStored[0]), &dataStored[0], &sdaToFind[0], &sdaPines[0]);
+	        //cal the dir
+	        dataStored[MASTER_MEMORY_WORM_DIR] = calDirMaster(&dataStored[0]);
 
-  }
-  Serial.println("3");
-  //end comu.
-  endCommu();
-  Serial.println("4");
-  //Make worm aniamtion. Delays included.
-  makeWorm( dataStored[MASTER_MEMORY_WORM_SIZE],
-            dataStored[MASTER_MEMORY_WORM_DELAY],
-            dataStored[MASTER_MEMORY_WORM_DIR],
-            dataStored[MASTER_MEMORY_DELAY_B_WORMS] );
-  Serial.println("5");
-  /*
-    pinMode(7,OUTPUT);
-    digitalWrite(7,LOW);
-    printMemory2(22);
-    delay(123947824);
-    */
+        }
+        //end comu.
+        endCommu();
+        //Make worm aniamtion. Delays included.
+        makeWorm( dataStored[MASTER_MEMORY_WORM_SIZE],
+        dataStored[MASTER_MEMORY_WORM_DELAY],
+        dataStored[MASTER_MEMORY_WORM_DIR],
+        dataStored[MASTER_MEMORY_DELAY_B_WORMS] );
 }

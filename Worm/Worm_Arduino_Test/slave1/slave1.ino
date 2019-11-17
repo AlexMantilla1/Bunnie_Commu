@@ -48,14 +48,14 @@ void printMemory2(int hasta) {
 void setup() {
   Serial.begin(9600);
   Serial.print("Slave Started! "); Serial.println(slaveAddres,BIN);
-   //fill the memory
+  //fill the memory
   for(int i = 0; i < 128 ; i++) dataStored[i] = 0x0;
   dataStored[SLAVE_MEMORY_WORM_DELAY] = (uint8_t) DELAY_WORM_MS;
   dataStored[SLAVE_MEMORY_WORM_SIZE] = 3;
   //dataStored[SLAVE_MEMORY_WORM_DIR] = WORM_0_TO_8;
   //Slave Config
   i2cConfig(SLAVE_MODE, sdaPines[0], scl, slaveAddres);
-  turnOffFlag(WAITING_FLAG);
+  //turnOffFlag(WAITING_FLAG);
   //Slave Set up
   i2cSlaveSetUp(timeout, &dataStored[0], &sdaPines[0]);
 }
@@ -63,27 +63,10 @@ void setup() {
 void loop() {
   //Make the check for slave positions.
 
-  Serial.println("1");
-  /*
-  delay(110);
-  pinMode(7,OUTPUT);
-  digitalWrite(7,LOW);
-  delay(299857383);
-  */
   slaveListeningState(timeout, &dataStored[0], &sdaPines[0]);
-  Serial.println("1.5");
-  dataStored[SLAVE_MEMORY_WORM_DIR] = calDirSlave(&dataStored[0]);
-  //waitSleep(scl);
-  Serial.println("2");
-  makeWorm( dataStored[SLAVE_MEMORY_WORM_SIZE],
-            dataStored[SLAVE_MEMORY_WORM_DELAY],
-            dataStored[SLAVE_MEMORY_WORM_DIR],
-            dataStored[SLAVE_MEMORY_DELAY_B_WORMS] );
-  Serial.println("2");
-  /*
-  pinMode(7,OUTPUT);
-  digitalWrite(7,LOW);
-  printMemory2(10);
-  delay(123947824);
-  */
+        dataStored[SLAVE_MEMORY_WORM_DIR] = calDirSlave(&dataStored[0]);
+        makeWorm( dataStored[SLAVE_MEMORY_WORM_SIZE],
+        dataStored[SLAVE_MEMORY_WORM_DELAY],
+        dataStored[SLAVE_MEMORY_WORM_DIR],
+        dataStored[SLAVE_MEMORY_DELAY_B_WORMS] );
 }
